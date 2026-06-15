@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>크레인 임대 관리 시스템</title>
+  <style>
+/* ===== CSS RESET & VARIABLES ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue-700: #1245A8;
+  --blue-600: #1E6FDB;
+  --blue-500: #3B8AFF;
+  --blue-100: #E8F1FF;
+  --blue-50:  #F0F6FF;
+
+  --steel-900: #111827;
+  --steel-800: #1F2937;
+  --steel-700: #374151;
+  --steel-500: #6B7280;
+  --steel-400: #9CA3AF;
+  --steel-300: #D1D5DB;
+  --steel-200: #E5E7EB;
+  --steel-100: #F3F4F6;
+  --steel-50:  #F9FAFB;
+
+  --green-600: #059669;
+  --green-100: #D1FAE5;
+  --amber-600: #D97706;
+  --amber-100: #FEF3C7;
+  --red-600:   #DC2626;
+  --red-100:   #FEE2E2;
+
+  --sidebar-w: 240px;
+  --topbar-h:  60px;
+  --radius:    10px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+
+  --font: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+}
+
+html, body { height: 100%; font-family: var(--font); background: var(--steel-100); color: var(--steel-800); font-size: 14px; line-height: 1.5; }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+  background: var(--steel-900); display: flex; flex-direction: column;
+  transition: transform .25s ease; z-index: 200;
+}
+.sidebar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; height: var(--topbar-h); border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-text { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+.sidebar-toggle { background: none; border: none; color: var(--steel-400); cursor: pointer; padding: 4px; border-radius: 6px; }
+.sidebar-toggle:hover { color: #fff; background: rgba(255,255,255,.08); }
+
+.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px;
+  color: var(--steel-400); text-decoration: none; font-size: 13.5px; font-weight: 500;
+  margin-bottom: 2px; transition: all .15s;
+}
+.nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-item.active { background: var(--blue-600); color: #fff; }
+.nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+.sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.07); }
+.user-info { display: flex; align-items: center; gap: 10px; }
+.user-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--blue-600); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.user-name { display: block; font-size: 13px; font-weight: 600; color: #fff; }
+.user-role { font-size: 11.5px; color: var(--steel-400); }
+
+/* ===== MAIN CONTENT ===== */
+.main-content { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .25s ease; }
+
+.top-bar {
+  position: sticky; top: 0; z-index: 100; height: var(--topbar-h);
+  background: #fff; border-bottom: 1px solid var(--steel-200);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+}
+.top-bar-left { display: flex; align-items: center; gap: 12px; }
+.mobile-toggle { display: none; background: none; border: none; cursor: pointer; color: var(--steel-700); padding: 4px; border-radius: 6px; }
+.page-title { font-size: 17px; font-weight: 700; color: var(--steel-900); }
+.current-date { font-size: 13px; color: var(--steel-500); }
+
+.page-view { flex: 1; padding: 24px; }
+
+/* ===== CARDS ===== */
+.card { background: #fff; border-radius: var(--radius); border: 1px solid var(--steel-200); box-shadow: var(--shadow-sm); }
+.card-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--steel-200); }
+.card-title { font-size: 14px; font-weight: 700; color: var(--steel-800); }
+.card-body { padding: 20px; }
+
+/* ===== STATS GRID ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: #fff; border-radius: var(--radius); border: 1px solid var(--steel-200);
+  padding: 20px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-sm);
+}
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stat-icon svg { width: 24px; height: 24px; }
+.stat-icon.blue { background: var(--blue-100); color: var(--blue-600); }
+.stat-icon.green { background: var(--green-100); color: var(--green-600); }
+.stat-icon.amber { background: var(--amber-100); color: var(--amber-600); }
+.stat-icon.red { background: var(--red-100); color: var(--red-600); }
+.stat-label { font-size: 12px; color: var(--steel-500); margin-bottom: 4px; font-weight: 500; }
+.stat-value { font-size: 26px; font-weight: 800; color: var(--steel-900); line-height: 1; }
+.stat-sub { font-size: 11.5px; color: var(--steel-400); margin-top: 4px; }
+
+/* ===== TABLE ===== */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 12px; font-weight: 600; color: var(--steel-500); padding: 10px 14px; background: var(--steel-50); border-bottom: 1px solid var(--steel-200); white-space: nowrap; }
+td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--steel-200); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--steel-50); }
+
+/* ===== BADGE / STATUS ===== */
+.badge {
+  display: inline-flex; align-items: center; padding: 3px 10px;
+  border-radius: 20px; font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.badge-green  { background: var(--green-100);  color: var(--green-600); }
+.badge-amber  { background: var(--amber-100);  color: var(--amber-600); }
+.badge-red    { background: var(--red-100);    color: var(--red-600);   }
+.badge-blue   { background: var(--blue-100);   color: var(--blue-700);  }
+.badge-gray   { background: var(--steel-200);  color: var(--steel-600); }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+  border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: none; transition: all .15s; white-space: nowrap;
+}
+.btn-primary { background: var(--blue-600); color: #fff; }
+.btn-primary:hover { background: var(--blue-700); }
+.btn-secondary { background: var(--steel-100); color: var(--steel-700); border: 1px solid var(--steel-200); }
+.btn-secondary:hover { background: var(--steel-200); }
+.btn-danger { background: var(--red-100); color: var(--red-600); }
+.btn-danger:hover { background: #FECACA; }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+.btn-icon { width: 32px; height: 32px; padding: 0; justify-content: center; border-radius: 7px; background: var(--steel-100); color: var(--steel-600); border: 1px solid var(--steel-200); }
+.btn-icon:hover { background: var(--steel-200); }
+.btn svg { width: 15px; height: 15px; }
+
+/* ===== PAGE HEADER ===== */
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.page-header-left h2 { font-size: 18px; font-weight: 800; color: var(--steel-900); }
+.page-header-left p { font-size: 13px; color: var(--steel-500); margin-top: 2px; }
+
+/* ===== FILTER BAR ===== */
+.filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-bar input, .filter-bar select {
+  padding: 8px 12px; border: 1px solid var(--steel-200); border-radius: 8px;
+  font-size: 13px; color: var(--steel-800); background: #fff; outline: none;
+  transition: border-color .15s;
+}
+.filter-bar input:focus, .filter-bar select:focus { border-color: var(--blue-500); }
+.filter-bar input { min-width: 200px; }
+
+/* ===== TABS ===== */
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--steel-200); padding-bottom: 0; }
+.tab-btn {
+  padding: 9px 18px; font-size: 13px; font-weight: 600; color: var(--steel-500);
+  background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: all .15s;
+}
+.tab-btn.active { color: var(--blue-600); border-bottom-color: var(--blue-600); }
+.tab-btn:hover:not(.active) { color: var(--steel-800); }
+
+/* ===== FORM ===== */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 12.5px; font-weight: 600; color: var(--steel-700); }
+input, select, textarea {
+  padding: 9px 12px; border: 1px solid var(--steel-200); border-radius: 8px;
+  font-size: 13.5px; color: var(--steel-800); font-family: var(--font);
+  background: #fff; outline: none; transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(30,111,219,.1); }
+textarea { resize: vertical; min-height: 80px; }
+
+/* ===== CHECKLIST ===== */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--steel-50); border-radius: 8px; border: 1px solid var(--steel-200); }
+.check-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--blue-600); cursor: pointer; flex-shrink: 0; }
+.check-item label { font-size: 13px; font-weight: 500; color: var(--steel-700); cursor: pointer; flex: 1; margin: 0; }
+.check-item.checked label { text-decoration: line-through; color: var(--steel-400); }
+
+/* ===== GRID LAYOUTS ===== */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--steel-400); }
+.empty-state svg { width: 48px; height: 48px; margin: 0 auto 12px; opacity: .4; display: block; }
+.empty-state p { font-size: 14px; }
+
+/* ===== TOAST ===== */
+.toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+  background: var(--steel-900); color: #fff; border-radius: 10px;
+  box-shadow: var(--shadow-lg); font-size: 13.5px; font-weight: 500;
+  animation: slideIn .25s ease; min-width: 240px;
+}
+.toast.success { background: var(--green-600); }
+.toast.error   { background: var(--red-600); }
+@keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ===== AMOUNT ===== */
+.amount-positive { color: var(--blue-600); font-weight: 700; }
+.amount-negative { color: var(--red-600); font-weight: 700; }
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0; }
+  .mobile-toggle { display: flex; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .two-col, .form-grid { grid-template-columns: 1fr; }
+  .three-col { grid-template-columns: 1fr 1fr; }
+  .page-view { padding: 16px; }
+}
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .three-col { grid-template-columns: 1fr; }
+}
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  z-index: 500; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+.modal-container {
+  position: fixed; inset: 0; z-index: 501;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; pointer-events: none;
+}
+.modal-container.open { pointer-events: auto; }
+
+.modal {
+  background: #fff; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  transform: translateY(16px) scale(.97); opacity: 0;
+  transition: all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.modal.open { transform: none; opacity: 1; }
+
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 0;
+}
+.modal-title { font-size: 16px; font-weight: 800; color: var(--steel-900); }
+.modal-close {
+  width: 30px; height: 30px; border-radius: 8px; border: none;
+  background: var(--steel-100); color: var(--steel-600); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1;
+}
+.modal-close:hover { background: var(--steel-200); }
+
+.modal-body { padding: 20px 24px; }
+
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 24px; border-top: 1px solid var(--steel-200);
+}
+
+/* ===== DETAIL PANEL ===== */
+.detail-section { margin-bottom: 20px; }
+.detail-section-title { font-size: 12px; font-weight: 700; color: var(--steel-500); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.detail-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.detail-label { font-size: 12.5px; font-weight: 600; color: var(--steel-500); min-width: 110px; flex-shrink: 0; }
+.detail-value { font-size: 13px; color: var(--steel-800); }
+
+/* ===== PHOTO UPLOAD ===== */
+.photo-upload {
+  border: 2px dashed var(--steel-200); border-radius: 10px; padding: 20px;
+  text-align: center; cursor: pointer; transition: border-color .15s;
+}
+.photo-upload:hover { border-color: var(--blue-500); }
+.photo-upload p { font-size: 13px; color: var(--steel-500); margin-top: 8px; }
+.photo-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.photo-preview img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--steel-200); }
+
+/* ===== ISSUE CARD ===== */
+.issue-card { background: var(--steel-50); border: 1px solid var(--steel-200); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+.issue-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.issue-date { font-size: 11.5px; color: var(--steel-400); }
+.issue-desc { font-size: 13px; color: var(--steel-700); margin-bottom: 8px; }
+.issue-action { font-size: 12px; color: var(--green-600); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="6" fill="#1E6FDB"/>
+          <path d="M6 24V10L16 6L26 10V24" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="16" y1="6" x2="16" y2="24" stroke="white" stroke-width="2"/>
+          <line x1="6" y1="14" x2="26" y2="14" stroke="white" stroke-width="1.5" stroke-dasharray="2 2"/>
+          <rect x="14" y="20" width="4" height="4" fill="white" rx="1"/>
+        </svg>
+        <span class="logo-text">크레인 관리</span>
+      </div>
+      <button class="sidebar-toggle" id="sidebarToggle">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M4 6h12M4 10h12M4 14h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-page="dashboard" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <span>대시보드</span>
+      </a>
+      <a class="nav-item" data-page="crane" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M4 17V7L10 4L16 7V17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="10" y1="4" x2="10" y2="17" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="4" y1="10" x2="16" y2="10" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/>
+          <rect x="8.5" y="14" width="3" height="3" stroke="currentColor" stroke-width="1.2" rx="0.5"/>
+        </svg>
+        <span>타워크레인 관리</span>
+      </a>
+      <a class="nav-item" data-page="mast" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <rect x="8" y="2" width="4" height="16" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="6" y1="5" x2="14" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="6" y1="9" x2="14" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="6" y1="13" x2="14" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>개별마스트 관리</span>
+      </a>
+      <a class="nav-item" data-page="yard" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M2 17L6 8L10 13L14 7L18 17H2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        <span>야적장 관리</span>
+      </a>
+      <a class="nav-item" data-page="finance" href="#">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10 5v2M10 13v2M7.5 8.5C7.5 7.4 8.6 7 10 7s2.5.4 2.5 1.5-1 1.5-2.5 2-2.5.9-2.5 2 1.1 1.5 2.5 1.5 2.5-.4 2.5-1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>입출금 관리</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">관</div>
+        <div class="user-details">
+          <span class="user-name">관리자</span>
+          <span class="user-role">장비업자</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content" id="mainContent">
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button class="mobile-toggle" id="mobileToggle">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M4 6h12M4 10h12M4 14h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <h1 class="page-title" id="pageTitle">대시보드</h1>
+      </div>
+      <div class="top-bar-right">
+        <span class="current-date" id="currentDate"></span>
+      </div>
+    </header>
+    <div class="page-view" id="pageView"></div>
+  </main>
+
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal-container" id="modalContainer"></div>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+// ===== DATA LAYER =====
+// localStorage 기반 데이터 관리
+
+const DB = {
+  KEYS: { cranes: 'crm_cranes', masts: 'crm_masts', yards: 'crm_yards', txns: 'crm_txns', issues: 'crm_issues' },
+
+  get(key) {
+    try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
+  },
+  set(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+  },
+  nextId(arr) {
+    return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1;
+  }
+};
+
+// ===== CRANES =====
+const CraneDB = {
+  all()          { return DB.get(DB.KEYS.cranes); },
+  save(data)     { DB.set(DB.KEYS.cranes, data); },
+  add(item)      { const all = this.all(); item.id = DB.nextId(all); item.createdAt = today(); all.push(item); this.save(all); return item; },
+  update(id, up) { const all = this.all().map(c => c.id===id ? {...c,...up} : c); this.save(all); },
+  remove(id)     { this.save(this.all().filter(c => c.id !== id)); },
+  get(id)        { return this.all().find(c => c.id === id); }
+};
+
+// ===== MASTS =====
+const MastDB = {
+  all()          { return DB.get(DB.KEYS.masts); },
+  save(data)     { DB.set(DB.KEYS.masts, data); },
+  add(item)      { const all = this.all(); item.id = DB.nextId(all); item.createdAt = today(); all.push(item); this.save(all); return item; },
+  update(id, up) { const all = this.all().map(m => m.id===id ? {...m,...up} : m); this.save(all); },
+  remove(id)     { this.save(this.all().filter(m => m.id !== id)); },
+  get(id)        { return this.all().find(m => m.id === id); }
+};
+
+// ===== YARDS =====
+const YardDB = {
+  all()          { return DB.get(DB.KEYS.yards); },
+  save(data)     { DB.set(DB.KEYS.yards, data); },
+  add(item)      { const all = this.all(); item.id = DB.nextId(all); item.createdAt = today(); all.push(item); this.save(all); return item; },
+  update(id, up) { const all = this.all().map(y => y.id===id ? {...y,...up} : y); this.save(all); },
+  remove(id)     { this.save(this.all().filter(y => y.id !== id)); },
+  get(id)        { return this.all().find(y => y.id === id); }
+};
+
+// ===== TRANSACTIONS =====
+const TxnDB = {
+  all()          { return DB.get(DB.KEYS.txns); },
+  save(data)     { DB.set(DB.KEYS.txns, data); },
+  add(item)      { const all = this.all(); item.id = DB.nextId(all); item.createdAt = today(); all.push(item); this.save(all); return item; },
+  remove(id)     { this.save(this.all().filter(t => t.id !== id)); }
+};
+
+// ===== ISSUES =====
+const IssueDB = {
+  all()          { return DB.get(DB.KEYS.issues); },
+  save(data)     { DB.set(DB.KEYS.issues, data); },
+  add(item)      { const all = this.all(); item.id = DB.nextId(all); item.createdAt = today(); all.push(item); this.save(all); return item; },
+  update(id, up) { const all = this.all().map(i => i.id===id ? {...i,...up} : i); this.save(all); },
+  byCrane(craneId) { return this.all().filter(i => i.craneId === craneId); }
+};
+
+// ===== HELPERS =====
+function today() { return new Date().toISOString().slice(0,10); }
+function fmtDate(d) { if(!d) return '-'; return d.replace(/-/g,'.'); }
+function fmtMoney(n) { return (n||0).toLocaleString('ko-KR') + '원'; }
+function fmtMoneyM(n) { return Math.round((n||0)/10000).toLocaleString('ko-KR') + '만원'; }
+
+// ===== SEED DATA (최초 실행 시) =====
+function seedData() {
+  if (CraneDB.all().length) return;
+
+  const yards = [
+    { name: '경기 광주 야적장', address: '경기도 광주시 오포읍', owner: '홍길동', phone: '010-1234-5678', area: 2000 },
+    { name: '인천 서구 야적장', address: '인천광역시 서구 오류동', owner: '박철수', phone: '010-9876-5432', area: 1500 },
+  ];
+  yards.forEach(y => YardDB.add(y));
+
+  const cranes = [
+    { uid: 'TC-001', model: 'Liebherr 280EC', capacity: '10톤', height: '55m', jibLength: '60m', status: '가동중', site: '강남 래미안 현장', siteStart: '2024-03-01', yardId: 1, checkStatus: '완료' },
+    { uid: 'TC-002', model: 'Potain MDT 219', capacity: '8톤', height: '48m', jibLength: '50m', status: '야적중', site: '', siteStart: '', yardId: 1, checkStatus: '완료' },
+    { uid: 'TC-003', model: 'Manitowoc MR 295', capacity: '12톤', height: '62m', jibLength: '65m', status: '가동중', site: '수원 힐스테이트', siteStart: '2024-02-15', yardId: 2, checkStatus: '이슈있음' },
+    { uid: 'TC-004', model: 'Terex CTT 322', capacity: '10톤', height: '52m', jibLength: '58m', status: '정비중', site: '', siteStart: '', yardId: 2, checkStatus: '점검필요' },
+  ];
+  cranes.forEach(c => CraneDB.add(c));
+
+  const masts = [
+    { uid: 'MS-001', type: 'L형 마스트', spec: '2.0m x 2.0m', unit: '6m', quantity: 24, yardId: 1, status: '야적중', site: '', rentCount: 0 },
+    { uid: 'MS-002', type: 'K형 마스트', spec: '1.8m x 1.8m', unit: '6m', quantity: 36, yardId: 1, status: '임대중', site: '강남 래미안 현장', rentCount: 36 },
+    { uid: 'MS-003', type: 'L형 마스트', spec: '2.0m x 2.0m', unit: '6m', quantity: 18, yardId: 2, status: '야적중', site: '', rentCount: 0 },
+    { uid: 'MS-004', type: 'H형 마스트', spec: '2.4m x 2.4m', unit: '6m', quantity: 12, yardId: 2, status: '임대중', site: '수원 힐스테이트', rentCount: 12 },
+  ];
+  masts.forEach(m => MastDB.add(m));
+
+  const txns = [
+    { type: 'income', category: '크레인임대료', craneUid: 'TC-001', site: '강남 래미안 현장', amount: 4500000, month: '2024-05', memo: '5월 임대료' },
+    { type: 'income', category: '크레인임대료', craneUid: 'TC-003', site: '수원 힐스테이트', amount: 5200000, month: '2024-05', memo: '5월 임대료' },
+    { type: 'income', category: '마스트임대료', mastUid: 'MS-002', site: '강남 래미안 현장', amount: 1800000, month: '2024-05', memo: '5월 마스트 임대' },
+    { type: 'expense', category: '수리비', craneUid: 'TC-003', site: '', amount: 850000, month: '2024-05', memo: '붐대 베어링 교체' },
+    { type: 'expense', category: '상차비', craneUid: 'TC-001', site: '', amount: 300000, month: '2024-05', memo: '출고 상차' },
+    { type: 'expense', category: '하차비', craneUid: 'TC-003', site: '', amount: 350000, month: '2024-05', memo: '반납 하차' },
+  ];
+  txns.forEach(t => TxnDB.add(t));
+
+  const issues = [
+    { craneId: 3, craneUid: 'TC-003', type: '가동중', title: '붐대 베어링 이상음 발생', desc: '붐대 2절 베어링에서 이상음 발생, 즉시 점검 필요', status: '조치완료', action: '베어링 교체 완료 (2024.05.10)', date: '2024-05-08' },
+    { craneId: 4, craneUid: 'TC-004', type: '출고전', title: '후크 와이어로프 마모 확인 필요', desc: '와이어로프 마모 한계 근접, 교체 후 출고 필요', status: '점검필요', action: '', date: '2024-05-12' },
+  ];
+  issues.forEach(i => IssueDB.add(i));
+}
+
+seedData();
+// ===== UI UTILITIES =====
+
+const UI = {
+  // 모달 열기
+  openModal(title, bodyHTML, footerHTML = '') {
+    const overlay   = document.getElementById('modalOverlay');
+    const container = document.getElementById('modalContainer');
+    container.innerHTML = `
+      <div class="modal" id="mainModal">
+        <div class="modal-header">
+          <span class="modal-title">${title}</span>
+          <button class="modal-close" onclick="UI.closeModal()">×</button>
+        </div>
+        <div class="modal-body">${bodyHTML}</div>
+        ${footerHTML ? `<div class="modal-footer">${footerHTML}</div>` : ''}
+      </div>`;
+    overlay.classList.add('open');
+    container.classList.add('open');
+    requestAnimationFrame(() => document.getElementById('mainModal').classList.add('open'));
+  },
+
+  closeModal() {
+    const overlay   = document.getElementById('modalOverlay');
+    const container = document.getElementById('modalContainer');
+    const modal     = document.getElementById('mainModal');
+    if (modal) modal.classList.remove('open');
+    setTimeout(() => {
+      overlay.classList.remove('open');
+      container.classList.remove('open');
+      container.innerHTML = '';
+    }, 200);
+  },
+
+  // 토스트
+  toast(msg, type = 'default') {
+    const tc = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${msg}</span>`;
+    tc.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  },
+
+  // 확인 다이얼로그
+  confirm(msg, onOk) {
+    UI.openModal('확인',
+      `<p style="font-size:14px;color:var(--steel-700);line-height:1.7;">${msg}</p>`,
+      `<button class="btn btn-secondary" onclick="UI.closeModal()">취소</button>
+       <button class="btn btn-danger" onclick="UI.closeModal();(${onOk.toString()})()">삭제</button>`
+    );
+  },
+
+  // SVG 아이콘
+  icon: {
+    plus: `<svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+    edit: `<svg viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5-7.5 7.5H3.5v-2.5L11 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+    trash: `<svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1M13 4l-1 9H4L3 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    eye: `<svg viewBox="0 0 16 16" fill="none"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>`,
+    warn: `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2L14 13H2L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6v3M8 11v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  }
+};
+
+// 오버레이 클릭 시 닫기
+document.getElementById('modalOverlay').addEventListener('click', () => UI.closeModal());
+// ===== 대시보드 페이지 =====
+function renderDashboard() {
+  const cranes = CraneDB.all();
+  const masts  = MastDB.all();
+  const yards  = YardDB.all();
+  const txns   = TxnDB.all();
+  const issues = IssueDB.all();
+
+  const activeC   = cranes.filter(c => c.status === '가동중').length;
+  const yardC     = cranes.filter(c => c.status === '야적중').length;
+  const repairC   = cranes.filter(c => c.status === '정비중').length;
+  const totalMast = masts.reduce((s,m) => s + (m.quantity||0), 0);
+  const rentMast  = masts.reduce((s,m) => s + (m.rentCount||0), 0);
+  const openIssues = issues.filter(i => i.status !== '조치완료').length;
+
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const income  = txns.filter(t => t.type==='income'  && t.month===thisMonth).reduce((s,t) => s+t.amount, 0);
+  const expense = txns.filter(t => t.type==='expense' && t.month===thisMonth).reduce((s,t) => s+t.amount, 0);
+
+  const recentTxns = [...txns].reverse().slice(0, 5);
+  const recentIssues = [...issues].reverse().slice(0, 4);
+
+  document.getElementById('pageView').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10L12 5L20 10V20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="5" x2="12" y2="20" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">타워크레인 (가동/전체)</div>
+          <div class="stat-value">${activeC}<span style="font-size:16px;color:var(--steel-400)">/${cranes.length}</span></div>
+          <div class="stat-sub">야적 ${yardC}대 · 정비 ${repairC}대</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="20" rx="2" stroke="currentColor" stroke-width="2"/><line x1="7" y1="7" x2="17" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="17" x2="17" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">마스트 (임대/전체)</div>
+          <div class="stat-value">${rentMast}<span style="font-size:16px;color:var(--steel-400)">/${totalMast}</span></div>
+          <div class="stat-sub">야적장 보관 ${totalMast-rentMast}개</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6v4l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">이번달 수입</div>
+          <div class="stat-value" style="font-size:20px;">${fmtMoneyM(income)}</div>
+          <div class="stat-sub">지출 ${fmtMoneyM(expense)}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon ${openIssues>0?'red':'green'}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L21 19H3L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9v4M12 16v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">미조치 이슈</div>
+          <div class="stat-value">${openIssues}</div>
+          <div class="stat-sub">야적장 ${yards.length}개소 관리중</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- 크레인 현황 -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">크레인 현황</span>
+          <button class="btn btn-sm btn-secondary" onclick="App.navigate('crane')">전체보기</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>모델</th><th>상태</th><th>현장/위치</th></tr></thead>
+            <tbody>
+              ${cranes.slice(0,5).map(c => `
+                <tr>
+                  <td><strong>${c.uid}</strong></td>
+                  <td>${c.model}</td>
+                  <td>${statusBadgeCrane(c.status)}</td>
+                  <td style="color:var(--steel-500);font-size:12px;">${c.status==='가동중' ? c.site : yardName(c.yardId, yards)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 최근 이슈 -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">최근 이슈</span>
+          <button class="btn btn-sm btn-secondary" onclick="App.navigate('crane')">전체보기</button>
+        </div>
+        <div class="card-body" style="padding-top:12px;">
+          ${recentIssues.length ? recentIssues.map(i => `
+            <div class="issue-card">
+              <div class="issue-card-header">
+                <span class="badge ${i.status==='조치완료'?'badge-green':'badge-red'}">${i.status}</span>
+                <span class="issue-date">${i.craneUid} · ${fmtDate(i.date)}</span>
+              </div>
+              <div class="issue-desc">${i.title}</div>
+              ${i.action ? `<div class="issue-action">✓ ${i.action}</div>` : ''}
+            </div>`).join('') : '<div class="empty-state"><p>이슈 없음</p></div>'}
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;" class="card">
+      <div class="card-header">
+        <span class="card-title">최근 입출금 내역</span>
+        <button class="btn btn-sm btn-secondary" onclick="App.navigate('finance')">전체보기</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>구분</th><th>카테고리</th><th>관련크레인/마스트</th><th>현장</th><th>금액</th><th>월</th></tr></thead>
+          <tbody>
+            ${recentTxns.map(t => `
+              <tr>
+                <td>${t.type==='income' ? '<span class="badge badge-blue">입금</span>' : '<span class="badge badge-red">출금</span>'}</td>
+                <td>${t.category}</td>
+                <td style="color:var(--steel-500);">${t.craneUid||t.mastUid||'-'}</td>
+                <td style="color:var(--steel-500);">${t.site||'-'}</td>
+                <td class="${t.type==='income'?'amount-positive':'amount-negative'}">${fmtMoney(t.amount)}</td>
+                <td style="color:var(--steel-500);">${t.month||'-'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function statusBadgeCrane(s) {
+  const map = { '가동중':'badge-green', '야적중':'badge-blue', '정비중':'badge-amber', '출고중':'badge-gray' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+function yardName(id, yards) {
+  const y = yards.find(y => y.id===id);
+  return y ? y.name : '-';
+}
+// ===== 타워크레인 관리 페이지 =====
+let craneTab = 'list'; // list | issues | parts
+
+function renderCrane() {
+  document.getElementById('pageView').innerHTML = `
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>타워크레인 관리</h2>
+        <p>크레인 등록, 현장 배치, 점검 이슈, 부품 위치 관리</p>
+      </div>
+      <button class="btn btn-primary" onclick="openCraneForm()">${UI.icon.plus} 크레인 등록</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn ${craneTab==='list'?'active':''}" onclick="setCraneTab('list')">크레인 목록</button>
+      <button class="tab-btn ${craneTab==='issues'?'active':''}" onclick="setCraneTab('issues')">점검 이슈</button>
+      <button class="tab-btn ${craneTab==='parts'?'active':''}" onclick="setCraneTab('parts')">부품 위치</button>
+    </div>
+
+    <div id="craneTabContent"></div>
+  `;
+  renderCraneTab();
+}
+
+function setCraneTab(tab) {
+  craneTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === ({list:'크레인 목록',issues:'점검 이슈',parts:'부품 위치'}[tab])));
+  renderCraneTab();
+}
+
+function renderCraneTab() {
+  const el = document.getElementById('craneTabContent');
+  if (craneTab === 'list')   el.innerHTML = cranListHTML();
+  if (craneTab === 'issues') el.innerHTML = craneIssuesHTML();
+  if (craneTab === 'parts')  el.innerHTML = cranePartsHTML();
+}
+
+// ---- 크레인 목록 ----
+function cranListHTML() {
+  const cranes = CraneDB.all();
+  const yards  = YardDB.all();
+  if (!cranes.length) return `<div class="empty-state"><p>등록된 크레인이 없습니다.</p></div>`;
+
+  return `
+    <div class="filter-bar">
+      <input type="text" id="craneSearch" placeholder="크레인 ID / 모델 검색" oninput="filterCraneList()">
+      <select id="craneStatusFilter" onchange="filterCraneList()">
+        <option value="">전체 상태</option>
+        <option>가동중</option><option>야적중</option><option>정비중</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table id="craneTable">
+          <thead>
+            <tr><th>크레인 ID</th><th>모델</th><th>용량/높이</th><th>상태</th><th>현장/야적장</th><th>출고일</th><th>점검</th><th>액션</th></tr>
+          </thead>
+          <tbody>
+            ${cranes.map(c => `
+              <tr data-uid="${c.uid.toLowerCase()}" data-model="${c.model.toLowerCase()}" data-status="${c.status}">
+                <td><strong>${c.uid}</strong></td>
+                <td>${c.model}</td>
+                <td style="font-size:12px;color:var(--steel-500);">${c.capacity} / ${c.height}</td>
+                <td>${statusBadgeCrane(c.status)}</td>
+                <td style="font-size:12px;">${c.status==='가동중' ? c.site : (yards.find(y=>y.id===c.yardId)||{name:'-'}).name}</td>
+                <td style="font-size:12px;color:var(--steel-500);">${fmtDate(c.siteStart)||'-'}</td>
+                <td>${checkBadge(c.checkStatus)}</td>
+                <td>
+                  <div style="display:flex;gap:6px;">
+                    <button class="btn btn-icon" title="상세" onclick="viewCraneDetail(${c.id})">${UI.icon.eye}</button>
+                    <button class="btn btn-icon" title="편집" onclick="openCraneForm(${c.id})">${UI.icon.edit}</button>
+                    <button class="btn btn-icon" title="삭제" onclick="deleteCrane(${c.id})">${UI.icon.trash}</button>
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function filterCraneList() {
+  const q  = document.getElementById('craneSearch').value.toLowerCase();
+  const st = document.getElementById('craneStatusFilter').value;
+  document.querySelectorAll('#craneTable tbody tr').forEach(r => {
+    const uid   = r.dataset.uid   || '';
+    const model = r.dataset.model || '';
+    const status= r.dataset.status|| '';
+    r.style.display = ((!q || uid.includes(q) || model.includes(q)) && (!st || status===st)) ? '' : 'none';
+  });
+}
+
+function checkBadge(s) {
+  const map = { '완료':'badge-green', '이슈있음':'badge-red', '점검필요':'badge-amber' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s||'미확인'}</span>`;
+}
+
+// ---- 크레인 상세 ----
+function viewCraneDetail(id) {
+  const c      = CraneDB.get(id);
+  const yards  = YardDB.all();
+  const issues = IssueDB.byCrane(id);
+  const yard   = yards.find(y => y.id === c.yardId);
+
+  UI.openModal(`크레인 상세 — ${c.uid}`, `
+    <div class="detail-section">
+      <div class="detail-section-title">기본 정보</div>
+      ${detailRow('크레인 ID', c.uid)} ${detailRow('모델', c.model)}
+      ${detailRow('최대 용량', c.capacity)} ${detailRow('최대 높이', c.height)}
+      ${detailRow('지브 길이', c.jibLength)} ${detailRow('상태', c.status)}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">현장 / 위치</div>
+      ${detailRow('배치 현장', c.site||'-')} ${detailRow('출고일', fmtDate(c.siteStart)||'-')}
+      ${detailRow('야적장', yard?yard.name:'-')}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">점검 이슈 (${issues.length}건)</div>
+      ${issues.length ? issues.map(i=>`
+        <div class="issue-card">
+          <div class="issue-card-header">
+            <span class="badge ${i.status==='조치완료'?'badge-green':'badge-red'}">${i.status}</span>
+            <span class="issue-date">${i.type} · ${fmtDate(i.date)}</span>
+          </div>
+          <div class="issue-desc">${i.title}</div>
+          ${i.desc ? `<div style="font-size:12px;color:var(--steel-500);margin-top:4px;">${i.desc}</div>` : ''}
+          ${i.action ? `<div class="issue-action">✓ ${i.action}</div>` : ''}
+        </div>`).join('') : '<p style="font-size:13px;color:var(--steel-400);">이슈 없음</p>'}
+    </div>`,
+    `<button class="btn btn-secondary" onclick="UI.closeModal()">닫기</button>
+     <button class="btn btn-primary" onclick="UI.closeModal();openCraneForm(${id})">편집</button>`
+  );
+}
+
+function detailRow(label, value) {
+  return `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`;
+}
+
+// ---- 크레인 폼 ----
+function openCraneForm(id = null) {
+  const c     = id ? CraneDB.get(id) : {};
+  const yards = YardDB.all();
+  const isEdit = !!id;
+
+  UI.openModal(isEdit ? '크레인 편집' : '크레인 등록', `
+    <div class="form-grid">
+      <div class="form-group"><label>크레인 ID *</label><input id="fUid" value="${c.uid||''}" placeholder="TC-001"></div>
+      <div class="form-group"><label>모델명 *</label><input id="fModel" value="${c.model||''}" placeholder="Liebherr 280EC"></div>
+      <div class="form-group"><label>최대 용량</label><input id="fCap" value="${c.capacity||''}" placeholder="10톤"></div>
+      <div class="form-group"><label>최대 높이</label><input id="fHeight" value="${c.height||''}" placeholder="55m"></div>
+      <div class="form-group"><label>지브 길이</label><input id="fJib" value="${c.jibLength||''}" placeholder="60m"></div>
+      <div class="form-group"><label>현재 상태</label>
+        <select id="fStatus">
+          ${['가동중','야적중','정비중'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>배치 현장</label><input id="fSite" value="${c.site||''}" placeholder="강남 래미안 현장"></div>
+      <div class="form-group"><label>출고일</label><input type="date" id="fSiteStart" value="${c.siteStart||''}"></div>
+      <div class="form-group"><label>야적장</label>
+        <select id="fYard">
+          <option value="">선택</option>
+          ${yards.map(y=>`<option value="${y.id}" ${c.yardId===y.id?'selected':''}>${y.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>점검 상태</label>
+        <select id="fCheck">
+          ${['완료','이슈있음','점검필요'].map(s=>`<option ${c.checkStatus===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="UI.closeModal()">취소</button>
+     <button class="btn btn-primary" onclick="saveCrane(${id||'null'})">${isEdit?'저장':'등록'}</button>`
+  );
+}
+
+function saveCrane(id) {
+  const data = {
+    uid: document.getElementById('fUid').value.trim(),
+    model: document.getElementById('fModel').value.trim(),
+    capacity: document.getElementById('fCap').value.trim(),
+    height: document.getElementById('fHeight').value.trim(),
+    jibLength: document.getElementById('fJib').value.trim(),
+    status: document.getElementById('fStatus').value,
+    site: document.getElementById('fSite').value.trim(),
+    siteStart: document.getElementById('fSiteStart').value,
+    yardId: parseInt(document.getElementById('fYard').value)||null,
+    checkStatus: document.getElementById('fCheck').value,
+  };
+  if (!data.uid || !data.model) { UI.toast('ID와 모델명은 필수입니다.', 'error'); return; }
+  if (id) { CraneDB.update(id, data); UI.toast('크레인 정보가 수정되었습니다.', 'success'); }
+  else    { CraneDB.add(data);        UI.toast('크레인이 등록되었습니다.', 'success'); }
+  UI.closeModal(); renderCrane();
+}
+
+function deleteCrane(id) {
+  const c = CraneDB.get(id);
+  UI.confirm(`크레인 <strong>${c.uid}</strong>을 삭제하시겠습니까?`, () => {
+    CraneDB.remove(id);
+    UI.toast('삭제되었습니다.');
+    renderCrane();
+  });
+}
+
+// ---- 점검 이슈 탭 ----
+function craneIssuesHTML() {
+  const issues = IssueDB.all();
+  const cranes = CraneDB.all();
+
+  return `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="openIssueForm()">${UI.icon.plus} 이슈 등록</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>크레인</th><th>유형</th><th>이슈 내용</th><th>상태</th><th>날짜</th><th>조치 내용</th><th>액션</th></tr></thead>
+          <tbody>
+            ${issues.length ? issues.map(i => `
+              <tr>
+                <td><strong>${i.craneUid}</strong></td>
+                <td><span class="badge ${i.type==='출고전'?'badge-amber':'badge-blue'}">${i.type}</span></td>
+                <td>${i.title}</td>
+                <td><span class="badge ${i.status==='조치완료'?'badge-green':'badge-red'}">${i.status}</span></td>
+                <td style="color:var(--steel-500);font-size:12px;">${fmtDate(i.date)}</td>
+                <td style="font-size:12px;color:var(--steel-600);">${i.action||'—'}</td>
+                <td>
+                  <div style="display:flex;gap:6px;">
+                    <button class="btn btn-icon" onclick="openIssueForm(${i.id})">${UI.icon.edit}</button>
+                    <button class="btn btn-icon" onclick="resolveIssue(${i.id})" title="조치완료 처리">✓</button>
+                  </div>
+                </td>
+              </tr>`).join('') : '<tr><td colspan="7"><div class="empty-state"><p>등록된 이슈가 없습니다.</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="margin-top:16px;" class="card">
+      <div class="card-header"><span class="card-title">출고 전 점검 체크리스트</span></div>
+      <div class="card-body">${checklistHTML()}</div>
+    </div>`;
+}
+
+function checklistHTML() {
+  const items = ['와이어로프 마모 상태 확인','훅 블록 이상 유무','리밋 스위치 작동 확인','붐대 연결부 볼트 체결 확인','운전실 계기판 및 조작부 점검','접지 및 전기배선 이상 유무','비상정지 스위치 작동 확인','윤활유 및 오일류 적정량 확인','안전장치(과부하 방지) 작동 확인','통신장비 (무전기) 작동 확인'];
+  return `<div class="checklist">
+    ${items.map((item,i) => `
+      <div class="check-item" id="chk-${i}" onclick="toggleCheck(${i})">
+        <input type="checkbox" id="cb-${i}">
+        <label for="cb-${i}">${item}</label>
+      </div>`).join('')}
+  </div>
+  <div style="margin-top:16px;display:flex;gap:10px;">
+    <button class="btn btn-secondary" onclick="checkAll()">전체 선택</button>
+    <button class="btn btn-secondary" onclick="uncheckAll()">전체 해제</button>
+    <button class="btn btn-primary" onclick="saveChecklist()">점검 완료 저장</button>
+  </div>`;
+}
+
+function toggleCheck(i) {
+  const cb  = document.getElementById(`cb-${i}`);
+  const row = document.getElementById(`chk-${i}`);
+  cb.checked = !cb.checked;
+  row.classList.toggle('checked', cb.checked);
+}
+function checkAll()   { document.querySelectorAll('.check-item input').forEach((cb,i) => { cb.checked=true;  document.getElementById(`chk-${i}`).classList.add('checked'); }); }
+function uncheckAll() { document.querySelectorAll('.check-item input').forEach((cb,i) => { cb.checked=false; document.getElementById(`chk-${i}`).classList.remove('checked'); }); }
+function saveChecklist() { UI.toast('점검 결과가 저장되었습니다.', 'success'); }
+
+function openIssueForm(id = null) {
+  const issue  = id ? IssueDB.all().find(i=>i.id===id) : {};
+  const cranes = CraneDB.all();
+
+  UI.openModal(id ? '이슈 편집' : '이슈 등록', `
+    <div class="form-grid">
+      <div class="form-group"><label>크레인 *</label>
+        <select id="iCrane">
+          <option value="">선택</option>
+          ${cranes.map(c=>`<option value="${c.id}" data-uid="${c.uid}" ${issue.craneId===c.id?'selected':''}>${c.uid} — ${c.model}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>유형</label>
+        <select id="iType">
+          ${['출고전','가동중','입고시'].map(t=>`<option ${issue.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group full"><label>이슈 제목 *</label><input id="iTitle" value="${issue.title||''}" placeholder="이슈를 간략히 입력하세요"></div>
+      <div class="form-group full"><label>상세 내용</label><textarea id="iDesc">${issue.desc||''}</textarea></div>
+      <div class="form-group"><label>상태</label>
+        <select id="iStatus">
+          ${['점검필요','조치중','조치완료'].map(s=>`<option ${issue.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>발생일</label><input type="date" id="iDate" value="${issue.date||today()}"></div>
+      <div class="form-group full"><label>조치 내용</label><textarea id="iAction">${issue.action||''}</textarea></div>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="UI.closeModal()">취소</button>
+     <button class="btn btn-primary" onclick="saveIssue(${id||'null'})">저장</button>`
+  );
+}
+
+function saveIssue(id) {
+  const craneEl = document.getElementById('iCrane');
+  const craneOpt = craneEl.options[craneEl.selectedIndex];
+  const data = {
+    craneId: parseInt(craneEl.value)||null,
+    craneUid: craneOpt ? craneOpt.dataset.uid : '',
+    type: document.getElementById('iType').value,
+    title: document.getElementById('iTitle').value.trim(),
+    desc: document.getElementById('iDesc').value.trim(),
+    status: document.getElementById('iStatus').value,
+    date: document.getElementById('iDate').value,
+    action: document.getElementById('iAction').value.trim(),
+  };
+  if (!data.craneId || !data.title) { UI.toast('크레인과 이슈 제목은 필수입니다.', 'error'); return; }
+  if (id) IssueDB.update(id, data);
+  else    IssueDB.add(data);
+  UI.toast('이슈가 저장되었습니다.', 'success');
+  UI.closeModal(); renderCrane();
+}
+
+function resolveIssue(id) {
+  IssueDB.update(id, { status: '조치완료' });
+  UI.toast('조치완료 처리되었습니다.', 'success');
+  renderCrane();
+}
+
+// ---- 부품 위치 탭 ----
+function cranePartsHTML() {
+  const cranes = CraneDB.all();
+  const yards  = YardDB.all();
+
+  return `
+    <div class="card">
+      <div class="card-header"><span class="card-title">크레인별 부품 위치 현황</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>크레인 ID</th><th>모델</th><th>현장 배치 부품</th><th>야적장 보관 부품</th><th>야적장</th></tr></thead>
+          <tbody>
+            ${cranes.map(c => {
+              const yard = yards.find(y => y.id === c.yardId);
+              const siteP  = c.status==='가동중'  ? '붐대, 카운터붐, 후크블록, 텔레스코프 케이지' : '—';
+              const yardP  = c.status==='야적중'  ? '전 부품 야적장 보관' : c.status==='가동중' ? '마스트 섹션 여분, 기타 부속' : '전 부품 보관 (정비중)';
+              return `<tr>
+                <td><strong>${c.uid}</strong></td>
+                <td>${c.model}</td>
+                <td style="font-size:12px;color:var(--steel-600);">${siteP}</td>
+                <td style="font-size:12px;color:var(--steel-600);">${yardP}</td>
+                <td style="font-size:12px;color:var(--steel-500);">${yard?yard.name:'-'}</td>
+              </tr>`;}).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+// ===== 개별마스트 관리 페이지 =====
+function renderMast() {
+  const masts = MastDB.all();
+  const yards = YardDB.all();
+
+  const total  = masts.reduce((s,m) => s+(m.quantity||0), 0);
+  const rented = masts.reduce((s,m) => s+(m.rentCount||0), 0);
+  const inYard = total - rented;
+
+  document.getElementById('pageView').innerHTML = `
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>개별마스트 관리</h2>
+        <p>마스트 인벤토리, 임대 현황, 위치 추적</p>
+      </div>
+      <button class="btn btn-primary" onclick="openMastForm()">${UI.icon.plus} 마스트 등록</button>
+    </div>
+
+    <div class="three-col" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="20" rx="2" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">전체 마스트</div>
+          <div class="stat-value">${total}<span style="font-size:14px;color:var(--steel-400)">개</span></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">임대중</div>
+          <div class="stat-value">${rented}<span style="font-size:14px;color:var(--steel-400)">개</span></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">야적장 보관</div>
+          <div class="stat-value">${inYard}<span style="font-size:14px;color:var(--steel-400)">개</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 야적장별 현황 -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header"><span class="card-title">야적장별 마스트 현황</span></div>
+      <div class="card-body">
+        <div class="two-col">
+          ${yards.map(yard => {
+            const yardMasts = masts.filter(m => m.yardId === yard.id);
+            const yTotal = yardMasts.reduce((s,m)=>s+(m.quantity||0),0);
+            const yRent  = yardMasts.reduce((s,m)=>s+(m.rentCount||0),0);
+            return `
+              <div style="background:var(--steel-50);border:1px solid var(--steel-200);border-radius:10px;padding:16px;">
+                <div style="font-weight:700;color:var(--steel-800);margin-bottom:4px;">${yard.name}</div>
+                <div style="font-size:12px;color:var(--steel-500);margin-bottom:12px;">${yard.address}</div>
+                <div style="display:flex;gap:16px;">
+                  <div><div style="font-size:11px;color:var(--steel-400);">보관중</div><div style="font-size:20px;font-weight:800;color:var(--blue-600);">${yTotal-yRent}</div></div>
+                  <div><div style="font-size:11px;color:var(--steel-400);">임대중</div><div style="font-size:20px;font-weight:800;color:var(--green-600);">${yRent}</div></div>
+                  <div><div style="font-size:11px;color:var(--steel-400);">전체</div><div style="font-size:20px;font-weight:800;color:var(--steel-700);">${yTotal}</div></div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- 마스트 목록 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">마스트 인벤토리</span>
+      </div>
+      <div class="filter-bar" style="padding:12px 16px 0;">
+        <input type="text" id="mastSearch" placeholder="마스트 ID / 유형 검색" oninput="filterMastList()">
+        <select id="mastStatusFilter" onchange="filterMastList()">
+          <option value="">전체 상태</option>
+          <option>야적중</option><option>임대중</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table id="mastTable">
+          <thead>
+            <tr><th>마스트 ID</th><th>유형</th><th>규격</th><th>단위 길이</th><th>전체 수량</th><th>임대중</th><th>보관중</th><th>상태</th><th>임대 현장</th><th>야적장</th><th>액션</th></tr>
+          </thead>
+          <tbody>
+            ${masts.map(m => {
+              const yard = yards.find(y=>y.id===m.yardId);
+              const inYardCount = (m.quantity||0) - (m.rentCount||0);
+              return `
+                <tr data-uid="${(m.uid||'').toLowerCase()}" data-type="${(m.type||'').toLowerCase()}" data-status="${m.status}">
+                  <td><strong>${m.uid}</strong></td>
+                  <td>${m.type}</td>
+                  <td style="font-size:12px;color:var(--steel-500);">${m.spec}</td>
+                  <td style="font-size:12px;color:var(--steel-500);">${m.unit}</td>
+                  <td><strong>${m.quantity}</strong>개</td>
+                  <td style="color:var(--green-600);font-weight:700;">${m.rentCount||0}개</td>
+                  <td style="color:var(--blue-600);font-weight:700;">${inYardCount}개</td>
+                  <td><span class="badge ${m.status==='임대중'?'badge-green':'badge-blue'}">${m.status}</span></td>
+                  <td style="font-size:12px;color:var(--steel-500);">${m.site||'—'}</td>
+                  <td style="font-size:12px;color:var(--steel-500);">${yard?yard.name:'—'}</td>
+                  <td>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-icon" onclick="openMastForm(${m.id})">${UI.icon.edit}</button>
+                      <button class="btn btn-icon" onclick="deleteMast(${m.id})">${UI.icon.trash}</button>
+                    </div>
+                  </td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function filterMastList() {
+  const q  = document.getElementById('mastSearch').value.toLowerCase();
+  const st = document.getElementById('mastStatusFilter').value;
+  document.querySelectorAll('#mastTable tbody tr').forEach(r => {
+    const uid  = r.dataset.uid   || '';
+    const type = r.dataset.type  || '';
+    const status = r.dataset.status || '';
+    r.style.display = ((!q || uid.includes(q) || type.includes(q)) && (!st || status===st)) ? '' : 'none';
+  });
+}
+
+function openMastForm(id = null) {
+  const m     = id ? MastDB.get(id) : {};
+  const yards = YardDB.all();
+
+  UI.openModal(id ? '마스트 편집' : '마스트 등록', `
+    <div class="form-grid">
+      <div class="form-group"><label>마스트 ID *</label><input id="mUid" value="${m.uid||''}" placeholder="MS-001"></div>
+      <div class="form-group"><label>유형 *</label>
+        <select id="mType">
+          ${['L형 마스트','K형 마스트','H형 마스트','기타'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>규격</label><input id="mSpec" value="${m.spec||''}" placeholder="2.0m x 2.0m"></div>
+      <div class="form-group"><label>단위 길이</label><input id="mUnit" value="${m.unit||'6m'}" placeholder="6m"></div>
+      <div class="form-group"><label>전체 수량 *</label><input type="number" id="mQty" value="${m.quantity||''}" min="0" placeholder="24"></div>
+      <div class="form-group"><label>임대중 수량</label><input type="number" id="mRent" value="${m.rentCount||0}" min="0" placeholder="0"></div>
+      <div class="form-group"><label>상태</label>
+        <select id="mStatus">
+          ${['야적중','임대중'].map(s=>`<option ${m.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>야적장</label>
+        <select id="mYard">
+          <option value="">선택</option>
+          ${yards.map(y=>`<option value="${y.id}" ${m.yardId===y.id?'selected':''}>${y.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group full"><label>임대 현장</label><input id="mSite" value="${m.site||''}" placeholder="현장명 입력 (임대중인 경우)"></div>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="UI.closeModal()">취소</button>
+     <button class="btn btn-primary" onclick="saveMast(${id||'null'})">저장</button>`
+  );
+}
+
+function saveMast(id) {
+  const data = {
+    uid:       document.getElementById('mUid').value.trim(),
+    type:      document.getElementById('mType').value,
+    spec:      document.getElementById('mSpec').value.trim(),
+    unit:      document.getElementById('mUnit').value.trim(),
+    quantity:  parseInt(document.getElementById('mQty').value)||0,
+    rentCount: parseInt(document.getElementById('mRent').value)||0,
+    status:    document.getElementById('mStatus').value,
+    yardId:    parseInt(document.getElementById('mYard').value)||null,
+    site:      document.getElementById('mSite').value.trim(),
+  };
+  if (!data.uid) { UI.toast('마스트 ID는 필수입니다.', 'error'); return; }
+  if (data.rentCount > data.quantity) { UI.toast('임대 수량이 전체 수량을 초과할 수 없습니다.', 'error'); return; }
+  if (id) { MastDB.update(id, data); UI.toast('마스트 정보가 수정되었습니다.', 'success'); }
+  else    { MastDB.add(data);        UI.toast('마스트가 등록되었습니다.', 'success'); }
+  UI.closeModal(); renderMast();
+}
+
+function deleteMast(id) {
+  const m = MastDB.get(id);
+  UI.confirm(`마스트 <strong>${m.uid}</strong>을 삭제하시겠습니까?`, () => {
+    MastDB.remove(id);
+    UI.toast('삭제되었습니다.');
+    renderMast();
+  });
+}
+// ===== 야적장 관리 페이지 =====
+function renderYard() {
+  const yards  = YardDB.all();
+  const cranes = CraneDB.all();
+  const masts  = MastDB.all();
+
+  document.getElementById('pageView').innerHTML = `
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>야적장 관리</h2>
+        <p>야적장별 보관 현황, 크레인 및 마스트 재고 관리</p>
+      </div>
+      <button class="btn btn-primary" onclick="openYardForm()">${UI.icon.plus} 야적장 등록</button>
+    </div>
+
+    ${!yards.length ? `<div class="empty-state"><p>등록된 야적장이 없습니다.</p></div>` :
+      yards.map(yard => {
+        const yCranes = cranes.filter(c => c.yardId === yard.id);
+        const yMasts  = masts.filter(m => m.yardId === yard.id);
+        const totalMast = yMasts.reduce((s,m)=>s+(m.quantity||0),0);
+        const rentMast  = yMasts.reduce((s,m)=>s+(m.rentCount||0),0);
+
+        return `
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+              <div>
+                <span class="card-title">${yard.name}</span>
+                <span style="margin-left:10px;font-size:12px;color:var(--steel-500);">${yard.address}</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <span style="font-size:12px;color:var(--steel-500);">보유자: ${yard.owner||'—'} · ${yard.phone||''}</span>
+                <button class="btn btn-sm btn-secondary" onclick="openYardForm(${yard.id})">${UI.icon.edit} 편집</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteYard(${yard.id})">${UI.icon.trash}</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="three-col" style="margin-bottom:20px;">
+                <div style="background:var(--blue-50);border:1px solid var(--blue-100);border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-size:11.5px;color:var(--blue-700);font-weight:600;margin-bottom:6px;">크레인 보관</div>
+                  <div style="font-size:28px;font-weight:800;color:var(--blue-600);">${yCranes.filter(c=>c.status==='야적중'||c.status==='정비중').length}</div>
+                  <div style="font-size:11.5px;color:var(--steel-500);">전체 관련 ${yCranes.length}대</div>
+                </div>
+                <div style="background:var(--green-100);border:1px solid #A7F3D0;border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-size:11.5px;color:var(--green-600);font-weight:600;margin-bottom:6px;">마스트 보관</div>
+                  <div style="font-size:28px;font-weight:800;color:var(--green-600);">${totalMast-rentMast}</div>
+                  <div style="font-size:11.5px;color:var(--steel-500);">임대중 ${rentMast}개</div>
+                </div>
+                <div style="background:var(--steel-50);border:1px solid var(--steel-200);border-radius:10px;padding:14px;text-align:center;">
+                  <div style="font-size:11.5px;color:var(--steel-600);font-weight:600;margin-bottom:6px;">부지 면적</div>
+                  <div style="font-size:28px;font-weight:800;color:var(--steel-700);">${(yard.area||0).toLocaleString()}</div>
+                  <div style="font-size:11.5px;color:var(--steel-500);">㎡</div>
+                </div>
+              </div>
+
+              <!-- 크레인 목록 -->
+              <div style="margin-bottom:16px;">
+                <div style="font-size:12px;font-weight:700;color:var(--steel-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">보관 크레인</div>
+                ${yCranes.length ? `
+                  <table style="width:100%;font-size:13px;">
+                    <thead><tr style="background:var(--steel-50);">
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">ID</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">모델</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">상태</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">현장</th>
+                    </tr></thead>
+                    <tbody>
+                      ${yCranes.map(c=>`
+                        <tr style="border-top:1px solid var(--steel-100);">
+                          <td style="padding:8px 12px;"><strong>${c.uid}</strong></td>
+                          <td style="padding:8px 12px;color:var(--steel-600);">${c.model}</td>
+                          <td style="padding:8px 12px;">${statusBadgeCrane(c.status)}</td>
+                          <td style="padding:8px 12px;font-size:12px;color:var(--steel-500);">${c.site||'—'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                  </table>` : '<p style="font-size:13px;color:var(--steel-400);">보관 중인 크레인 없음</p>'}
+              </div>
+
+              <!-- 마스트 목록 -->
+              <div>
+                <div style="font-size:12px;font-weight:700;color:var(--steel-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">마스트 재고</div>
+                ${yMasts.length ? `
+                  <table style="width:100%;font-size:13px;">
+                    <thead><tr style="background:var(--steel-50);">
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">ID</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">유형</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">전체</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">보관</th>
+                      <th style="padding:8px 12px;text-align:left;font-size:11.5px;color:var(--steel-500);">임대중</th>
+                    </tr></thead>
+                    <tbody>
+                      ${yMasts.map(m=>`
+                        <tr style="border-top:1px solid var(--steel-100);">
+                          <td style="padding:8px 12px;"><strong>${m.uid}</strong></td>
+                          <td style="padding:8px 12px;color:var(--steel-600);">${m.type} ${m.spec}</td>
+                          <td style="padding:8px 12px;">${m.quantity}개</td>
+                          <td style="padding:8px 12px;color:var(--blue-600);font-weight:700;">${(m.quantity||0)-(m.rentCount||0)}개</td>
+                          <td style="padding:8px 12px;color:var(--green-600);font-weight:700;">${m.rentCount||0}개</td>
+                        </tr>`).join('')}
+                    </tbody>
+                  </table>` : '<p style="font-size:13px;color:var(--steel-400);">보관 중인 마스트 없음</p>'}
+              </div>
+            </div>
+          </div>`;
+      }).join('')
+    }
+  `;
+}
+
+function openYardForm(id = null) {
+  const y = id ? YardDB.get(id) : {};
+
+  UI.openModal(id ? '야적장 편집' : '야적장 등록', `
+    <div class="form-grid">
+      <div class="form-group full"><label>야적장 이름 *</label><input id="yName" value="${y.name||''}" placeholder="경기 광주 야적장"></div>
+      <div class="form-group full"><label>주소</label><input id="yAddr" value="${y.address||''}" placeholder="경기도 광주시 오포읍 ..."></div>
+      <div class="form-group"><label>보유자 이름</label><input id="yOwner" value="${y.owner||''}" placeholder="홍길동"></div>
+      <div class="form-group"><label>연락처</label><input id="yPhone" value="${y.phone||''}" placeholder="010-0000-0000"></div>
+      <div class="form-group"><label>부지 면적 (㎡)</label><input type="number" id="yArea" value="${y.area||''}" placeholder="2000"></div>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="UI.closeModal()">취소</button>
+     <button class="btn btn-primary" onclick="saveYard(${id||'null'})">저장</button>`
+  );
+}
+
+function saveYard(id) {
+  const data = {
+    name:    document.getElementById('yName').value.trim(),
+    address: document.getElementById('yAddr').value.trim(),
+    owner:   document.getElementById('yOwner').value.trim(),
+    phone:   document.getElementById('yPhone').value.trim(),
+    area:    parseInt(document.getElementById('yArea').value)||0,
+  };
+  if (!data.name) { UI.toast('야적장 이름은 필수입니다.', 'error'); return; }
+  if (id) { YardDB.update(id, data); UI.toast('야적장 정보가 수정되었습니다.', 'success'); }
+  else    { YardDB.add(data);        UI.toast('야적장이 등록되었습니다.', 'success'); }
+  UI.closeModal(); renderYard();
+}
+
+function deleteYard(id) {
+  const y = YardDB.get(id);
+  UI.confirm(`야적장 <strong>${y.name}</strong>을 삭제하시겠습니까?<br><small>관련 크레인/마스트의 야적장 정보는 별도로 업데이트하세요.</small>`, () => {
+    YardDB.remove(id);
+    UI.toast('삭제되었습니다.');
+    renderYard();
+  });
+}
+// ===== 입출금 관리 페이지 =====
+let finTab = 'all'; // all | income | expense
+
+function renderFinance() {
+  const txns   = TxnDB.all();
+  const cranes = CraneDB.all();
+  const masts  = MastDB.all();
+
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const income  = txns.filter(t => t.type==='income'  && t.month===thisMonth).reduce((s,t)=>s+t.amount,0);
+  const expense = txns.filter(t => t.type==='expense' && t.month===thisMonth).reduce((s,t)=>s+t.amount,0);
+  const profit  = income - expense;
+
+  document.getElementById('pageView').innerHTML = `
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>입출금 관리</h2>
+        <p>크레인 및 마스트 임대 수입, 수리비/상하차비 지출 관리</p>
+      </div>
+      <button class="btn btn-primary" onclick="openTxnForm()">${UI.icon.plus} 내역 추가</button>
+    </div>
+
+    <!-- 이번달 요약 -->
+    <div class="three-col" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">이번달 수입</div>
+          <div class="stat-value amount-positive" style="font-size:20px;">${fmtMoneyM(income)}</div>
+          <div class="stat-sub">${thisMonth}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">이번달 지출</div>
+          <div class="stat-value amount-negative" style="font-size:20px;">${fmtMoneyM(expense)}</div>
+          <div class="stat-sub">${thisMonth}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon ${profit>=0?'green':'red'}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="stat-label">이번달 순익</div>
+          <div class="stat-value ${profit>=0?'amount-positive':'amount-negative'}" style="font-size:20px;">${fmtMoneyM(profit)}</div>
+          <div class="stat-sub">${profit>=0?'흑자':'적자'}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 월별 요약 -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header"><span class="card-title">카테고리별 현황 (이번달)</span></div>
+      <div class="card-body">
+        <div class="two-col">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--steel-500);margin-bottom:10px;">입금 항목</div>
+            ${renderCategoryBreakdown(txns, 'income', thisMonth)}
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--steel-500);margin-bottom:10px;">출금 항목</div>
+            ${renderCategoryBreakdown(txns, 'expense', thisMonth)}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 거래 내역 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">거래 내역</span>
+        <div class="tabs" style="margin:0;border:none;padding:0;">
+          <button class="tab-btn ${finTab==='all'?'active':''}" onclick="setFinTab('all')">전체</button>
+          <button class="tab-btn ${finTab==='income'?'active':''}" onclick="setFinTab('income')">입금</button>
+          <button class="tab-btn ${finTab==='expense'?'active':''}" onclick="setFinTab('expense')">출금</button>
+        </div>
+      </div>
+      <div class="filter-bar" style="padding:12px 16px 0;">
+        <input type="text" id="txnSearch" placeholder="현장명 / 크레인 ID 검색" oninput="filterTxnList()">
+        <input type="month" id="txnMonth" value="${thisMonth}" onchange="filterTxnList()">
+        <select id="txnCatFilter" onchange="filterTxnList()">
+          <option value="">전체 카테고리</option>
+          <option>크레인임대료</option><option>마스트임대료</option>
+          <option>수리비</option><option>상차비</option><option>하차비</option><option>기타</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table id="txnTable">
+          <thead>
+            <tr><th>구분</th><th>카테고리</th><th>관련장비</th><th>현장명</th><th>금액</th><th>월</th><th>메모</th><th>액션</th></tr>
+          </thead>
+          <tbody>
+            ${[...txns].reverse().map(t => `
+              <tr data-type="${t.type}" data-search="${(t.site+' '+(t.craneUid||t.mastUid||'')).toLowerCase()}" data-month="${t.month||''}" data-cat="${t.category}">
+                <td>${t.type==='income'?'<span class="badge badge-blue">입금</span>':'<span class="badge badge-red">출금</span>'}</td>
+                <td>${t.category}</td>
+                <td style="font-size:12px;color:var(--steel-500);">${t.craneUid||t.mastUid||'—'}</td>
+                <td style="font-size:12px;">${t.site||'—'}</td>
+                <td class="${t.type==='income'?'amount-positive':'amount-negative'}">${fmtMoney(t.amount)}</td>
+                <td style="font-size:12px;color:var(--steel-500);">${t.month||'—'}</td>
+                <td style="font-size:12px;color:var(--steel-500);">${t.memo||'—'}</td>
+                <td><button class="btn btn-icon" onclick="deleteTxn(${t.id})">${UI.icon.trash}</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderCategoryBreakdown(txns, type, month) {
+  const filtered = txns.filter(t => t.type===type && (!month || t.month===month));
+  const map = {};
+  filtered.forEach(t => { map[t.category] = (map[t.category]||0) + t.amount; });
+  const total = Object.values(map).reduce((s,v)=>s+v,0);
+  if (!total) return '<p style="font-size:13px;color:var(--steel-400);">내역 없음</p>';
+  return Object.entries(map).map(([cat, amt]) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--steel-100);">
+      <span style="font-size:13px;color:var(--steel-700);">${cat}</span>
+      <span style="font-size:13px;font-weight:700;color:${type==='income'?'var(--blue-600)':'var(--red-600)'};">${fmtMoney(amt)}</span>
+    </div>`).join('');
+}
+
+function setFinTab(tab) {
+  finTab = tab;
+  document.querySelectorAll('.tabs .tab-btn').forEach(b => {
+    const labels = {all:'전체',income:'입금',expense:'출금'};
+    b.classList.toggle('active', b.textContent.trim()===labels[tab]);
+  });
+  filterTxnList();
+}
+
+function filterTxnList() {
+  const q     = (document.getElementById('txnSearch')?.value||'').toLowerCase();
+  const month = document.getElementById('txnMonth')?.value||'';
+  const cat   = document.getElementById('txnCatFilter')?.value||'';
+  document.querySelectorAll('#txnTable tbody tr').forEach(r => {
+    const type  = r.dataset.type   || '';
+    const search= r.dataset.search || '';
+    const rMonth= r.dataset.month  || '';
+    const rCat  = r.dataset.cat    || '';
+    const typeOk  = finTab==='all' || type===finTab;
+    const searchOk= !q || search.includes(q);
+    const monthOk = !month || rMonth===month;
+    const catOk   = !cat || rCat===cat;
+    r.style.display = (typeOk && searchOk && monthOk && catOk) ? '' : 'none';
+  });
+}
+
+function openTxnForm() {
+  const cranes = CraneDB.all();
+  const masts  = MastDB.all();
+  const thisM  = new Date().toISOString().slice(0,7);
+
+  UI.openModal('입출금 내역 추가', `
+    <div class="form-grid">
+      <div class="form-group"><label>구분 *</label>
+        <select id="tType" onchange="toggleTxnFields()">
+          <option value="income">입금</option>
+          <option value="expense">출금</option>
+        </select>
+      </div>
+      <div class="form-group"><label>카테고리 *</label>
+        <select id="tCat">
+          <option>크레인임대료</option><option>마스트임대료</option>
+          <option>수리비</option><option>상차비</option><option>하차비</option><option>기타</option>
+        </select>
+      </div>
+      <div class="form-group"><label>관련 크레인</label>
+        <select id="tCrane">
+          <option value="">선택안함</option>
+          ${cranes.map(c=>`<option value="${c.uid}">${c.uid} — ${c.model}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>관련 마스트</label>
+        <select id="tMast">
+          <option value="">선택안함</option>
+          ${masts.map(m=>`<option value="${m.uid}">${m.uid} — ${m.type}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>현장명</label><input id="tSite" placeholder="강남 래미안 현장"></div>
+      <div class="form-group"><label>해당 월 *</label><input type="month" id="tMonth" value="${thisM}"></div>
+      <div class="form-group"><label>금액 (원) *</label><input type="number" id="tAmount" placeholder="4500000" min="0"></div>
+      <div class="form-group full"><label>메모</label><input id="tMemo" placeholder="세부 내용 입력"></div>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="UI.closeModal()">취소</button>
+     <button class="btn btn-primary" onclick="saveTxn()">저장</button>`
+  );
+}
+
+function saveTxn() {
+  const data = {
+    type:      document.getElementById('tType').value,
+    category:  document.getElementById('tCat').value,
+    craneUid:  document.getElementById('tCrane').value||null,
+    mastUid:   document.getElementById('tMast').value||null,
+    site:      document.getElementById('tSite').value.trim(),
+    month:     document.getElementById('tMonth').value,
+    amount:    parseInt(document.getElementById('tAmount').value)||0,
+    memo:      document.getElementById('tMemo').value.trim(),
+  };
+  if (!data.amount) { UI.toast('금액을 입력해주세요.', 'error'); return; }
+  TxnDB.add(data);
+  UI.toast('내역이 저장되었습니다.', 'success');
+  UI.closeModal(); renderFinance();
+}
+
+function deleteTxn(id) {
+  UI.confirm('이 내역을 삭제하시겠습니까?', () => {
+    TxnDB.remove(id);
+    UI.toast('삭제되었습니다.');
+    renderFinance();
+  });
+}
+// ===== 앱 라우터 =====
+const App = {
+  currentPage: 'dashboard',
+
+  init() {
+    // 날짜 표시
+    const d = new Date();
+    document.getElementById('currentDate').textContent =
+      `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+
+    // 사이드바 네비게이션
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', e => {
+        e.preventDefault();
+        this.navigate(item.dataset.page);
+        // 모바일 사이드바 닫기
+        document.getElementById('sidebar').classList.remove('open');
+      });
+    });
+
+    // 사이드바 토글 (데스크탑 축소)
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+      document.getElementById('mainContent').classList.toggle('expanded');
+    });
+
+    // 모바일 토글
+    document.getElementById('mobileToggle').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    // 초기 페이지 렌더
+    this.navigate('dashboard');
+  },
+
+  navigate(page) {
+    this.currentPage = page;
+
+    // 네비 active 상태
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.page === page);
+    });
+
+    // 페이지 타이틀
+    const titles = {
+      dashboard: '대시보드',
+      crane: '타워크레인 관리',
+      mast: '개별마스트 관리',
+      yard: '야적장 관리',
+      finance: '입출금 관리',
+    };
+    document.getElementById('pageTitle').textContent = titles[page] || '';
+
+    // 페이지 렌더
+    const renders = {
+      dashboard: renderDashboard,
+      crane: renderCrane,
+      mast: renderMast,
+      yard: renderYard,
+      finance: renderFinance,
+    };
+    if (renders[page]) renders[page]();
+  }
+};
+
+// 앱 실행
+document.addEventListener('DOMContentLoaded', () => App.init());
+  </script>
+</body>
+</html>
