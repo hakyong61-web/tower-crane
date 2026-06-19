@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>타워크레인 임대관리 시스템 - KIMCEA</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+  header { background: #1e3a5f; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 12; }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+  nav { background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; }
+  nav button { padding: 12px 20px; border: none; background: none; cursor: pointer; font-size: 14px; color: #64748b; border-bottom: 3px solid transparent; }
+  nav button.active { font-weight: 700; color: #1e3a5f; border-bottom: 3px solid #1e3a5f; }
+  .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 20px; }
+  .stat { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .stat-num { font-size: 28px; font-weight: 800; margin: 4px 0; }
+  .stat-label { font-size: 12px; color: #64748b; }
+  .badge { border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 600; display: inline-block; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: #f8fafc; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600; font-size: 13px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  .btn { background: #1e3a5f; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .btn-outline { background: #fff; color: #1e3a5f; border: 1px solid #1e3a5f; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  input, select { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%; font-family: inherit; }
+  label { font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-bottom: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #1e293b; }
+  .alert-box { border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; }
+  .form-box { background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
+  .form-title { font-weight: 700; margin-bottom: 12px; }
+  .form-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .row-faded { opacity: 0.45; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .crane-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+  .crane-row-name { font-weight: 600; font-size: 14px; }
+  .crane-row-serial { font-size: 12px; color: #64748b; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="font-size:28px">🏗️</div>
+  <div>
+    <h1>타워크레인 임대관리 시스템</h1>
+    <p>한국수입모바일크레인환경협회 (KIMCEA)</p>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('dashboard')">📊 대시보드</button>
+  <button onclick="showTab('cranes')">🏗️ 장비 관리</button>
+  <button onclick="showTab('inspection')">🔧 점검·정비</button>
+  <button onclick="showTab('lease')">📋 임대 현황</button>
+</nav>
+
+<div class="content">
+
+  <!-- 대시보드 -->
+  <div id="tab-dashboard">
+    <div class="stat-grid">
+      <div class="stat" style="border-left:4px solid #1e3a5f"><div class="stat-label">총 장비</div><div class="stat-num" id="s-total">0</div><div class="stat-label">대</div></div>
+      <div class="stat" style="border-left:4px solid #2563eb"><div class="stat-label">임대중</div><div class="stat-num" id="s-renting">0</div><div class="stat-label">대</div></div>
+      <div class="stat" style="border-left:4px solid #16a34a"><div class="stat-label">대기</div><div class="stat-num" id="s-waiting">0</div><div class="stat-label">대</div></div>
+      <div class="stat" style="border-left:4px solid #dc2626"><div class="stat-label">점검중</div><div class="stat-num" id="s-repairing">0</div><div class="stat-label">대</div></div>
+      <div class="stat" style="border-left:4px solid #d97706"><div class="stat-label">점검임박/지연</div><div class="stat-num" id="s-alert">0</div><div class="stat-label">건</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="card">
+        <div class="section-title">🏗️ 장비 현황</div>
+        <div id="dash-cranes"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">⚠️ 점검 알림</div>
+        <div id="dash-alerts"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 장비 관리 -->
+  <div id="tab-cranes" class="hidden">
+    <div class="card">
+      <div class="flex-between">
+        <div class="section-title">🏗️ 장비 목록</div>
+        <button class="btn" onclick="openCraneForm()">+ 장비 추가</button>
+      </div>
+      <div id="crane-form" class="form-box hidden">
+        <div class="form-title" id="crane-form-title">신규 장비 등록</div>
+        <div class="grid2">
+          <div><label>모델명</label><input id="f-model" placeholder="예: Potain MR608A"></div>
+          <div><label>시리얼 번호</label><input id="f-serial" placeholder="예: MR608A-001"></div>
+          <div><label>제조연도</label><input id="f-year" type="number" placeholder="예: 2020"></div>
+          <div><label>소유자</label><input id="f-owner" placeholder="예: 김학용"></div>
+          <div><label>상태</label><select id="f-status"><option>대기</option><option>임대중</option><option>점검중</option></select></div>
+          <div><label>현장명</label><input id="f-site" placeholder="예: 판교 A현장"></div>
+          <div><label>임차인</label><input id="f-tenant" placeholder="예: 삼성건설"></div>
+          <div><label>임대 시작</label><input id="f-lstart" type="date"></div>
+          <div><label>임대 종료</label><input id="f-lend" type="date"></div>
+        </div>
+        <div class="form-btns">
+          <button class="btn" onclick="saveCrane()">저장</button>
+          <button class="btn-outline" onclick="closeCraneForm()">취소</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>모델명</th><th>시리얼 번호</th><th>제조연도</th><th>소유자</th><th>상태</th><th>현장</th><th>임대 기간</th><th>관리</th>
+        </tr></thead>
+        <tbody id="crane-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 점검·정비 -->
+  <div id="tab-inspection" class="hidden">
+    <div class="card">
+      <div class="flex-between">
+        <div class="section-title">🔧 점검·정비 이력</div>
+        <button class="btn" onclick="openInspForm()">+ 점검 등록</button>
+      </div>
+      <div id="insp-form" class="form-box hidden">
+        <div class="form-title">점검·정비 기록 등록</div>
+        <div class="grid2">
+          <div><label>장비 선택</label><select id="i-crane"></select></div>
+          <div><label>점검일</label><input id="i-date" type="date"></div>
+          <div><label>점검 유형</label><select id="i-type"><option>정기점검</option><option>긴급정비</option><option>예방정비</option></select></div>
+          <div><label>결과</label><select id="i-result"><option>정상</option><option>주의</option><option>정비중</option></select></div>
+          <div><label>비용 (원)</label><input id="i-cost" type="number" placeholder="예: 150000"></div>
+          <div><label>담당 기술자</label><input id="i-eng" placeholder="예: 박기술"></div>
+          <div><label>다음 점검 예정일</label><input id="i-next" type="date"></div>
+          <div><label>비고</label><input id="i-note" placeholder="예: 와이어 교체 완료"></div>
+        </div>
+        <div class="form-btns">
+          <button class="btn" onclick="saveInsp()">저장</button>
+          <button class="btn-outline" onclick="closeInspForm()">취소</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>장비</th><th>점검일</th><th>유형</th><th>결과</th><th>비용</th><th>담당자</th><th>다음점검</th><th>비고</th>
+        </tr></thead>
+        <tbody id="insp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 임대 현황 -->
+  <div id="tab-lease" class="hidden">
+    <div class="card">
+      <div class="section-title">📋 임대 현황</div>
+      <table>
+        <thead><tr>
+          <th>모델명</th><th>시리얼 번호</th><th>현장명</th><th>임차인</th><th>임대 시작</th><th>임대 종료</th><th>잔여일</th><th>상태</th>
+        </tr></thead>
+        <tbody id="lease-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TODAY = new Date('2025-06-19');
+
+let cranes = [
+  {id:1, model:'Potain MR608A', serial:'MR608A-001', year:2018, owner:'김학용', status:'임대중', site:'판교 A현장', tenant:'삼성건설', leaseStart:'2025-03-01', leaseEnd:'2025-12-31'},
+  {id:2, model:'Potain MR608A', serial:'MR608A-002', year:2019, owner:'회원사 B', status:'대기', site:'-', tenant:'-', leaseStart:'-', leaseEnd:'-'},
+  {id:3, model:'Potain MDT219', serial:'MDT219-001', year:2017, owner:'회원사 C', status:'점검중', site:'-', tenant:'-', leaseStart:'-', leaseEnd:'-'},
+  {id:4, model:'Liebherr 280EC', serial:'280EC-001', year:2020, owner:'회원사 D', status:'임대중', site:'성남 B현장', tenant:'현대건설', leaseStart:'2025-05-01', leaseEnd:'2026-02-28'},
+  {id:5, model:'Liebherr 180EC', serial:'180EC-001', year:2016, owner:'회원사 E', status:'대기', site:'-', tenant:'-', leaseStart:'-', leaseEnd:'-'},
+];
+
+let inspections = [
+  {id:1, craneId:1, date:'2025-06-01', type:'정기점검', result:'정상', cost:150000, engineer:'박기술', nextDate:'2025-12-01', note:'와이어 교체 완료'},
+  {id:2, craneId:2, date:'2025-05-15', type:'정기점검', result:'정상', cost:120000, engineer:'이점검', nextDate:'2025-11-15', note:''},
+  {id:3, craneId:3, date:'2025-06-10', type:'긴급정비', result:'정비중', cost:850000, engineer:'최수리', nextDate:'2025-07-01', note:'호이스트 모터 교체'},
+  {id:4, craneId:4, date:'2025-04-20', type:'정기점검', result:'정상', cost:130000, engineer:'박기술', nextDate:'2025-10-20', note:''},
+  {id:5, craneId:5, date:'2025-03-10', type:'정기점검', result:'주의', cost:200000, engineer:'이점검', nextDate:'2025-09-10', note:'마스트 클립 마모 주의'},
+];
+
+const statusColor = {'임대중':'#2563eb','대기':'#16a34a','점검중':'#dc2626'};
+const resultColor = {'정상':'#16a34a','주의':'#d97706','정비중':'#dc2626'};
+const typeColor = {'정기점검':'#2563eb','긴급정비':'#dc2626','예방정비':'#7c3aed'};
+
+let editingCraneId = null;
+
+function daysUntil(dateStr) {
+  if (!dateStr || dateStr === '-') return null;
+  const d = new Date(dateStr);
+  return Math.ceil((d - TODAY) / (1000*60*60*24));
+}
+
+function badge(text, color) {
+  return `<span class="badge" style="background:${color}18;color:${color}">${text}</span>`;
+}
+
+function getCraneName(id) {
+  const c = cranes.find(c => c.id == id);
+  return c ? `${c.model} (${c.serial})` : '-';
+}
+
+function showTab(name) {
+  ['dashboard','cranes','inspection','lease'].forEach(t => {
+    document.getElementById('tab-'+t).classList.add('hidden');
+  });
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  document.querySelectorAll('nav button').forEach((b,i) => {
+    b.classList.remove('active');
+  });
+  const idx = ['dashboard','cranes','inspection','lease'].indexOf(name);
+  document.querySelectorAll('nav button')[idx].classList.add('active');
+
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'cranes') renderCranes();
+  if (name === 'inspection') { populateCraneSelect(); renderInspections(); }
+  if (name === 'lease') renderLease();
+}
+
+// ─── DASHBOARD ───
+function renderDashboard() {
+  const renting = cranes.filter(c=>c.status==='임대중').length;
+  const waiting = cranes.filter(c=>c.status==='대기').length;
+  const repairing = cranes.filter(c=>c.status==='점검중').length;
+  const alert = inspections.filter(i=>{ const d=daysUntil(i.nextDate); return d!==null&&d<=30; }).length;
+  document.getElementById('s-total').textContent = cranes.length;
+  document.getElementById('s-renting').textContent = renting;
+  document.getElementById('s-waiting').textContent = waiting;
+  document.getElementById('s-repairing').textContent = repairing;
+  document.getElementById('s-alert').textContent = alert;
+
+  document.getElementById('dash-cranes').innerHTML = cranes.map(c=>`
+    <div class="crane-row">
+      <div><div class="crane-row-name">${c.model}</div><div class="crane-row-serial">${c.serial}</div></div>
+      ${badge(c.status, statusColor[c.status]||'#64748b')}
+    </div>`).join('');
+
+  const alerts = inspections
+    .filter(i=>{ const d=daysUntil(i.nextDate); return d!==null&&d<=60; })
+    .sort((a,b)=>new Date(a.nextDate)-new Date(b.nextDate));
+
+  document.getElementById('dash-alerts').innerHTML = alerts.length ? alerts.map(i=>{
+    const d = daysUntil(i.nextDate);
+    const color = d<0?'#dc2626':d<=30?'#d97706':'#2563eb';
+    return `<div class="alert-box" style="background:${color}12;border:1px solid ${color}40">
+      <div style="font-weight:600;color:${color}">${getCraneName(i.craneId)}</div>
+      <div style="font-size:12px;color:#475569">다음 점검: ${i.nextDate} &nbsp; <b>${d<0?Math.abs(d)+'일 지연':'D-'+d}</b></div>
+    </div>`;
+  }).join('') : '<div style="color:#64748b;font-size:13px">60일 내 점검 예정 없음</div>';
+}
+
+// ─── CRANES ───
+function renderCranes() {
+  document.getElementById('crane-tbody').innerHTML = cranes.map(c=>`
+    <tr>
+      <td><b>${c.model}</b></td>
+      <td>${c.serial}</td>
+      <td>${c.year}</td>
+      <td>${c.owner}</td>
+      <td>${badge(c.status, statusColor[c.status]||'#64748b')}</td>
+      <td>${c.site}</td>
+      <td style="font-size:12px">${c.leaseStart!=='-'?c.leaseStart+' ~ '+c.leaseEnd:'-'}</td>
+      <td><button class="btn-outline btn-sm" onclick="editCrane(${c.id})">수정</button>
+          <button class="btn-outline btn-sm" style="color:#dc2626;border-color:#dc2626;margin-left:4px" onclick="deleteCrane(${c.id})">삭제</button></td>
+    </tr>`).join('');
+}
+
+function openCraneForm() {
+  editingCraneId = null;
+  document.getElementById('crane-form-title').textContent = '신규 장비 등록';
+  ['model','serial','year','owner','site','tenant'].forEach(k=>document.getElementById('f-'+k).value='');
+  document.getElementById('f-status').value = '대기';
+  document.getElementById('f-lstart').value = '';
+  document.getElementById('f-lend').value = '';
+  document.getElementById('crane-form').classList.remove('hidden');
+}
+
+function closeCraneForm() { document.getElementById('crane-form').classList.add('hidden'); }
+
+function editCrane(id) {
+  const c = cranes.find(c=>c.id===id);
+  editingCraneId = id;
+  document.getElementById('crane-form-title').textContent = '장비 수정';
+  document.getElementById('f-model').value = c.model;
+  document.getElementById('f-serial').value = c.serial;
+  document.getElementById('f-year').value = c.year;
+  document.getElementById('f-owner').value = c.owner;
+  document.getElementById('f-status').value = c.status;
+  document.getElementById('f-site').value = c.site;
+  document.getElementById('f-tenant').value = c.tenant;
+  document.getElementById('f-lstart').value = c.leaseStart==='-'?'':c.leaseStart;
+  document.getElementById('f-lend').value = c.leaseEnd==='-'?'':c.leaseEnd;
+  document.getElementById('crane-form').classList.remove('hidden');
+}
+
+function saveCrane() {
+  const model = document.getElementById('f-model').value.trim();
+  if (!model) return alert('모델명을 입력하세요.');
+  const obj = {
+    model, serial: document.getElementById('f-serial').value,
+    year: parseInt(document.getElementById('f-year').value)||0,
+    owner: document.getElementById('f-owner').value,
+    status: document.getElementById('f-status').value,
+    site: document.getElementById('f-site').value||'-',
+    tenant: document.getElementById('f-tenant').value||'-',
+    leaseStart: document.getElementById('f-lstart').value||'-',
+    leaseEnd: document.getElementById('f-lend').value||'-',
+  };
+  if (editingCraneId) {
+    cranes = cranes.map(c=>c.id===editingCraneId?{...obj,id:editingCraneId}:c);
+  } else {
+    cranes.push({...obj, id: Date.now()});
+  }
+  closeCraneForm();
+  renderCranes();
+}
+
+function deleteCrane(id) {
+  if (!confirm('이 장비를 삭제하시겠습니까?')) return;
+  cranes = cranes.filter(c=>c.id!==id);
+  inspections = inspections.filter(i=>i.craneId!==id);
+  renderCranes();
+}
+
+// ─── INSPECTIONS ───
+function populateCraneSelect() {
+  document.getElementById('i-crane').innerHTML = '<option value="">선택하세요</option>' +
+    cranes.map(c=>`<option value="${c.id}">${c.model} (${c.serial})</option>`).join('');
+}
+
+function renderInspections() {
+  document.getElementById('insp-tbody').innerHTML = [...inspections]
+    .sort((a,b)=>new Date(b.date)-new Date(a.date))
+    .map(i=>{
+      const d = daysUntil(i.nextDate);
+      const nc = d===null?'#64748b':d<0?'#dc2626':d<=30?'#d97706':'#16a34a';
+      return `<tr>
+        <td style="font-weight:600;font-size:13px">${getCraneName(i.craneId)}</td>
+        <td>${i.date}</td>
+        <td>${badge(i.type, typeColor[i.type]||'#64748b')}</td>
+        <td>${badge(i.result, resultColor[i.result]||'#64748b')}</td>
+        <td>${i.cost?i.cost.toLocaleString()+'원':'-'}</td>
+        <td>${i.engineer}</td>
+        <td style="color:${nc};font-weight:600">${i.nextDate}<br><span style="font-size:11px">${d!==null?(d<0?Math.abs(d)+'일 지연':'D-'+d):''}</span></td>
+        <td style="font-size:12px;color:#64748b">${i.note}</td>
+      </tr>`;
+    }).join('');
+}
+
+function openInspForm() {
+  document.getElementById('insp-form').classList.remove('hidden');
+  populateCraneSelect();
+}
+function closeInspForm() { document.getElementById('insp-form').classList.add('hidden'); }
+
+function saveInsp() {
+  const craneId = parseInt(document.getElementById('i-crane').value);
+  const date = document.getElementById('i-date').value;
+  if (!craneId || !date) return alert('장비와 점검일을 선택하세요.');
+  inspections.push({
+    id: Date.now(), craneId, date,
+    type: document.getElementById('i-type').value,
+    result: document.getElementById('i-result').value,
+    cost: parseInt(document.getElementById('i-cost').value)||0,
+    engineer: document.getElementById('i-eng').value,
+    nextDate: document.getElementById('i-next').value||'-',
+    note: document.getElementById('i-note').value,
+  });
+  ['i-crane','i-date','i-cost','i-eng','i-next','i-note'].forEach(id=>document.getElementById(id).value='');
+  closeInspForm();
+  renderInspections();
+}
+
+// ─── LEASE ───
+function renderLease() {
+  const renting = cranes.filter(c=>c.status==='임대중');
+  const others = cranes.filter(c=>c.status!=='임대중');
+  document.getElementById('lease-tbody').innerHTML = [
+    ...renting.map(c=>{
+      const d = daysUntil(c.leaseEnd);
+      const dc = d===null?'#64748b':d<0?'#dc2626':d<=30?'#d97706':'#16a34a';
+      return `<tr>
+        <td><b>${c.model}</b></td><td>${c.serial}</td><td>${c.site}</td><td>${c.tenant}</td>
+        <td>${c.leaseStart}</td><td>${c.leaseEnd}</td>
+        <td style="color:${dc};font-weight:700">${d!==null?(d<0?'만료 '+Math.abs(d)+'일':'D-'+d):'-'}</td>
+        <td>${badge(c.status, statusColor[c.status])}</td>
+      </tr>`;
+    }),
+    ...others.map(c=>`<tr class="row-faded">
+      <td>${c.model}</td><td>${c.serial}</td>
+      <td colspan="4" style="color:#94a3b8">임대 없음</td>
+      <td>-</td><td>${badge(c.status, statusColor[c.status])}</td>
+    </tr>`)
+  ].join('');
+}
+
+// 초기 렌더
+renderDashboard();
+</script>
+</body>
+</html>
